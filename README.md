@@ -43,10 +43,10 @@ where email in ('josh@example.com', 'triniti@example.com');
 
 ```text
 VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-public-anon-key
+VITE_SUPABASE_PUBLISHABLE_KEY=your-public-publishable-key
 ```
 
-The anon key is safe to expose in a frontend app when RLS is enabled. Do not commit service role keys.
+The publishable key is safe to expose in a frontend app when RLS is enabled. Do not commit secret or service role keys.
 
 ## GitLab Pages deployment
 
@@ -62,7 +62,7 @@ This repository also includes `.github/workflows/pages.yml` for GitHub Pages.
 
 1. In GitHub, open `Settings > Pages`.
 2. Set `Source` to `GitHub Actions`.
-3. Add repository secrets or variables for `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` if production Supabase is configured.
+3. Add repository secrets or variables for `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` if production Supabase is configured.
 4. Push to `main`. The workflow runs lint, tests, build, then publishes `dist`.
 
 ## Product search and API limitations

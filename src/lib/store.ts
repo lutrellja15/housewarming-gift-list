@@ -3,11 +3,12 @@ import { seedGifts } from './seed';
 import type { ActivityEvent, GiftInput, GiftItem, GiftStatus } from './types';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const supabasePublishableKey = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
+  import.meta.env.VITE_SUPABASE_ANON_KEY) as string | undefined;
 
-export const hasSupabaseConfig = Boolean(supabaseUrl && supabaseAnonKey);
+export const hasSupabaseConfig = Boolean(supabaseUrl && supabasePublishableKey);
 
-export const supabase = hasSupabaseConfig ? createClient(supabaseUrl!, supabaseAnonKey!) : null;
+export const supabase = hasSupabaseConfig ? createClient(supabaseUrl!, supabasePublishableKey!) : null;
 
 type DbGift = {
   id: string;
@@ -131,7 +132,7 @@ export async function getCurrentUser(): Promise<User | null> {
 
 export async function loginAdmin(email: string, password: string) {
   if (!supabase) {
-    throw new Error('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable production login.');
+    throw new Error('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to enable production login.');
   }
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
