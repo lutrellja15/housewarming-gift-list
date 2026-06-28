@@ -56,6 +56,15 @@ The anon key is safe to expose in a frontend app when RLS is enabled. Do not com
 4. Push to the default branch. The pipeline runs lint, tests, build, then deploys Pages.
 5. The live site URL appears under `Deploy > Pages`.
 
+## GitHub Pages deployment
+
+This repository also includes `.github/workflows/pages.yml` for GitHub Pages.
+
+1. In GitHub, open `Settings > Pages`.
+2. Set `Source` to `GitHub Actions`.
+3. Add repository secrets or variables for `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` if production Supabase is configured.
+4. Push to `main`. The workflow runs lint, tests, build, then publishes `dist`.
+
 ## Product search and API limitations
 
 Amazon, Walmart, and Wayfair product APIs usually require partner accounts, API keys, or commercial approval. This project avoids unauthorized scraping. The admin screen provides:
