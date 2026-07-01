@@ -168,12 +168,13 @@ export function AdminPanel({ gifts, onChanged }: Props) {
         store: parsed.store,
         storeUrl: parsed.storeUrl,
         imageUrl: current.imageUrl || parsed.imageUrl,
+        price: current.price ?? parsed.price,
         description: current.description || parsed.description || current.description
       }));
       setMessage(
-        parsed.source === 'metadata' && parsed.imageUrl
-          ? 'Product details and photo added. Review and edit before saving.'
-          : 'Product link added. I could not auto-find a product photo for this store, so you can still paste one if needed.'
+        parsed.source === 'metadata' && (parsed.imageUrl || parsed.price)
+          ? 'Product details added. Review and edit before saving.'
+          : 'Product link added. I could not auto-find a product photo or price for this store, so you can still fill those in if needed.'
       );
     } catch {
       setError('Enter a valid Amazon, Walmart, Wayfair, or custom product URL.');

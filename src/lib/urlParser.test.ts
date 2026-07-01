@@ -38,6 +38,14 @@ describe('metadata helpers', () => {
 
     expect(result.title).toBe('Oak Bench');
     expect(result.imageUrl).toBe('https://example.com/bench.jpg');
+    expect(result.price).toBeNull();
     expect(result.store).toBe('example');
+  });
+
+  it('applies metadata prices when present', () => {
+    const fallback = parseProductUrl('https://example.com/products/oak-entryway-bench');
+    const result = applyProductMetadata(fallback, { price: 149.99 });
+
+    expect(result.price).toBe(149.99);
   });
 });

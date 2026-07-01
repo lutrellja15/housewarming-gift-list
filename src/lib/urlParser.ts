@@ -3,6 +3,7 @@ type ParsedProduct = {
   store: string;
   storeUrl: string;
   imageUrl: string;
+  price: number | null;
   description?: string;
 };
 
@@ -31,7 +32,8 @@ export function parseProductUrl(input: string): ParsedProduct {
     title,
     store,
     storeUrl: url.toString(),
-    imageUrl: ''
+    imageUrl: '',
+    price: null
   };
 }
 
@@ -45,6 +47,7 @@ export function applyProductMetadata(product: ParsedProduct, metadata: Partial<P
     ...product,
     title: metadata.title?.trim() || product.title,
     imageUrl: metadata.imageUrl?.trim() || product.imageUrl,
+    price: typeof metadata.price === 'number' && Number.isFinite(metadata.price) ? metadata.price : product.price,
     description: metadata.description?.trim() || product.description,
     store: metadata.store?.trim() || product.store,
     storeUrl: metadata.storeUrl?.trim() || product.storeUrl

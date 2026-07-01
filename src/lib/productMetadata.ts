@@ -6,6 +6,7 @@ export type ProductMetadata = {
   store: string;
   storeUrl: string;
   imageUrl: string;
+  price: number | null;
   description?: string;
   source: 'metadata' | 'fallback';
 };
@@ -30,6 +31,6 @@ export async function fetchProductMetadata(url: string): Promise<ProductMetadata
 
   return {
     ...merged,
-    source: merged.imageUrl || metadata.title ? 'metadata' : 'fallback'
+    source: merged.imageUrl || metadata.title || typeof metadata.price === 'number' ? 'metadata' : 'fallback'
   };
 }

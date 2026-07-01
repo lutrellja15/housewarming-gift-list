@@ -9,6 +9,7 @@ type MetadataResponse = {
   store: string;
   storeUrl: string;
   imageUrl: string;
+  price: number | null;
   description: string;
 };
 
@@ -80,6 +81,82 @@ function absoluteUrl(value: string, baseUrl: string): string {
   }
 }
 
+function parsePrice(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value !== 'string') return null;
+
+  const normalized = value
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/,/g, '')
+    .match(/\d+(?:\.\d{1,2})?/);
+
+  if (!normalized) return null;
+
+  const price = Number(normalized[0]);
+  return Number.isFinite(price) ? price : null;
+}
+
+function findOfferPrice(value: unknown): number | null {
+  if (!value || typeof value !== 'object') return null;
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const price = findOfferPrice(item);
+      if (price !== null) return price;
+    }
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  const directPrice = parsePrice(record.price ?? record.lowPrice ?? record.highPrice);
+  if (directPrice !== null) return directPrice;
+
+  const offerPrice = findOfferPrice(record.offers);
+  if (offerPrice !== null) return offerPrice;
+
+  return findOfferPrice(record.aggregateOffer);
+}
+
+function jsonLdPrice(html: string): number | null {
+  const scripts = html.match(/<script[^>]+type=["']application\/ld\+json["'][^>]*>[\s\S]*?<\/script>/gi) ?? [];
+
+  for (const script of scripts) {
+    const rawJson = textBetween(script, /<script[^>]*>([\s\S]*?)<\/script>/i);
+    if (!rawJson) continue;
+
+    try {
+      const parsed = JSON.parse(decodeHtml(rawJson));
+      const price = findOfferPrice(parsed);
+      if (price !== null) return price;
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
+}
+
+function productPrice(html: string): number | null {
+  const metadataPrice = parsePrice(
+    metaContent(html, [
+      'product:price:amount',
+      'og:price:amount',
+      'twitter:data1',
+      'price',
+      'parsely-price'
+    ])
+  );
+  if (metadataPrice !== null) return metadataPrice;
+
+  const itempropPrice =
+    textBetween(html, /<meta[^>]+itemprop=["']price["'][^>]+content=["']([^"']+)["'][^>]*>/i) ||
+    textBetween(html, /<meta[^>]+content=["']([^"']+)["'][^>]+itemprop=["']price["'][^>]*>/i);
+  const itempropParsed = parsePrice(itempropPrice);
+  if (itempropParsed !== null) return itempropParsed;
+
+  return jsonLdPrice(html);
+}
+
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -126,12 +203,14 @@ Deno.serve(async (request) => {
       decodeHtml(textBetween(html, /<title[^>]*>([^<]+)<\/title>/i));
     const image = metaContent(html, ['og:image:secure_url', 'og:image', 'twitter:image', 'twitter:image:src']);
     const description = metaContent(html, ['og:description', 'twitter:description', 'description']);
+    const price = productPrice(html);
 
     const payload: MetadataResponse = {
       title,
       store: storeName(productUrl),
       storeUrl: productUrl.toString(),
       imageUrl: absoluteUrl(image, productUrl.toString()),
+      price,
       description
     };
 
