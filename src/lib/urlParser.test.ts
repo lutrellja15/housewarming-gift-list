@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildStoreSearchUrl, parseProductUrl } from './urlParser';
+import { applyProductMetadata, buildStoreSearchUrl, normalizeMetadataUrl, parseProductUrl } from './urlParser';
 
 describe('parseProductUrl', () => {
   it('detects supported store and derives a readable title', () => {
@@ -21,5 +21,23 @@ describe('buildStoreSearchUrl', () => {
     expect(buildStoreSearchUrl('Amazon', 'mixing bowls')).toContain('amazon.com/s?k=mixing%20bowls');
     expect(buildStoreSearchUrl('Walmart', 'mixing bowls')).toContain('walmart.com/search?q=mixing%20bowls');
     expect(buildStoreSearchUrl('Wayfair', 'mixing bowls')).toContain('wayfair.com/keyword.php?keyword=mixing%20bowls');
+  });
+});
+
+describe('metadata helpers', () => {
+  it('normalizes relative metadata image URLs', () => {
+    expect(normalizeMetadataUrl('/photo.jpg', 'https://example.com/products/item')).toBe('https://example.com/photo.jpg');
+  });
+
+  it('applies metadata without losing fallback fields', () => {
+    const fallback = parseProductUrl('https://example.com/products/oak-entryway-bench');
+    const result = applyProductMetadata(fallback, {
+      title: 'Oak Bench',
+      imageUrl: 'https://example.com/bench.jpg'
+    });
+
+    expect(result.title).toBe('Oak Bench');
+    expect(result.imageUrl).toBe('https://example.com/bench.jpg');
+    expect(result.store).toBe('example');
   });
 });

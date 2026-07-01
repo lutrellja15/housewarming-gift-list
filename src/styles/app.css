@@ -414,7 +414,8 @@ footer {
 }
 
 .two-column span,
-.login-form span {
+.login-form span,
+.gift-form label span {
   color: #7b8a8f;
   font-size: 0.85rem;
 }

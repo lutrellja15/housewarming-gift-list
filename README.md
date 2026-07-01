@@ -48,6 +48,16 @@ VITE_SUPABASE_PUBLISHABLE_KEY=your-public-publishable-key
 
 The publishable key is safe to expose in a frontend app when RLS is enabled. Do not commit secret or service role keys.
 
+### Product photo auto-fill
+
+The admin URL capture flow can auto-fill product photos when a product page exposes standard metadata such as `og:image`. Deploy the Supabase Edge Function after the Supabase project is linked:
+
+```bash
+supabase functions deploy product-metadata
+```
+
+The function lives in `supabase/functions/product-metadata`. It reads only page metadata for the URL an admin pastes, and the form still lets admins paste an image manually when a store blocks metadata access or does not publish a product image.
+
 ## GitLab Pages deployment
 
 1. Create a new GitLab repository.
@@ -70,7 +80,7 @@ This repository also includes `.github/workflows/pages.yml` for GitHub Pages.
 Amazon, Walmart, and Wayfair product APIs usually require partner accounts, API keys, or commercial approval. This project avoids unauthorized scraping. The admin screen provides:
 
 - Store search buttons that open Amazon, Walmart, or Wayfair search pages in a new tab.
-- A safe product URL capture workflow that detects store, derives a title from the URL, keeps the original purchase link, and lets admins edit title, image URL, price, category, notes, and description before saving.
+- A safe product URL capture workflow that detects store, derives a title from the URL, tries to auto-fill title/photo from standard product metadata, keeps the original purchase link, and lets admins edit title, image URL, price, category, notes, and description before saving.
 
 If official API access is obtained later, add a serverless function or edge function to protect API keys. Do not call private marketplace APIs directly from the browser.
 

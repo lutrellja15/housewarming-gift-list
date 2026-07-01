@@ -3,6 +3,7 @@ type ParsedProduct = {
   store: string;
   storeUrl: string;
   imageUrl: string;
+  description?: string;
 };
 
 const storeMatchers = [
@@ -31,6 +32,22 @@ export function parseProductUrl(input: string): ParsedProduct {
     store,
     storeUrl: url.toString(),
     imageUrl: ''
+  };
+}
+
+export function normalizeMetadataUrl(input: string, baseUrl: string): string {
+  if (!input.trim()) return '';
+  return new URL(input.trim(), baseUrl).toString();
+}
+
+export function applyProductMetadata(product: ParsedProduct, metadata: Partial<ParsedProduct>): ParsedProduct {
+  return {
+    ...product,
+    title: metadata.title?.trim() || product.title,
+    imageUrl: metadata.imageUrl?.trim() || product.imageUrl,
+    description: metadata.description?.trim() || product.description,
+    store: metadata.store?.trim() || product.store,
+    storeUrl: metadata.storeUrl?.trim() || product.storeUrl
   };
 }
 

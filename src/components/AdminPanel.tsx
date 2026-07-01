@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Edit, Gift, Link, LogOut, Plus, Search, Trash2 } from 'lucide-react';
-import { buildStoreSearchUrl, parseProductUrl } from '../lib/urlParser';
+import { fetchProductMetadata } from '../lib/productMetadata';
+import { buildStoreSearchUrl } from '../lib/urlParser';
 import {
   deleteGift,
   getCurrentUser,
@@ -46,6 +47,7 @@ export function AdminPanel({ gifts, onChanged }: Props) {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [capturing, setCapturing] = useState(false);
 
   const isDemoAdmin = !hasSupabaseConfig && userEmail === 'demo';
   const isLoggedIn = Boolean(userEmail);
@@ -154,20 +156,29 @@ export function AdminPanel({ gifts, onChanged }: Props) {
     await refreshActivity();
   }
 
-  function parseUrl() {
+  async function parseUrl() {
     setError('');
+    setMessage('');
+    setCapturing(true);
     try {
-      const parsed = parseProductUrl(urlToParse);
+      const parsed = await fetchProductMetadata(urlToParse);
       setForm((current) => ({
         ...current,
         title: current.title || parsed.title,
         store: parsed.store,
         storeUrl: parsed.storeUrl,
-        imageUrl: current.imageUrl || parsed.imageUrl
+        imageUrl: current.imageUrl || parsed.imageUrl,
+        description: current.description || parsed.description || current.description
       }));
-      setMessage('Product link details added. Review and edit before saving.');
+      setMessage(
+        parsed.source === 'metadata' && parsed.imageUrl
+          ? 'Product details and photo added. Review and edit before saving.'
+          : 'Product link added. I could not auto-find a product photo for this store, so you can still paste one if needed.'
+      );
     } catch {
       setError('Enter a valid Amazon, Walmart, Wayfair, or custom product URL.');
+    } finally {
+      setCapturing(false);
     }
   }
 
@@ -219,8 +230,8 @@ export function AdminPanel({ gifts, onChanged }: Props) {
               Paste product URL
               <input value={urlToParse} onChange={(event) => setUrlToParse(event.target.value)} placeholder="https://..." />
             </label>
-            <button type="button" className="secondary-button" onClick={parseUrl}>
-              <Link size={18} /> Capture
+            <button type="button" className="secondary-button" onClick={parseUrl} disabled={capturing}>
+              <Link size={18} /> {capturing ? 'Fetching...' : 'Capture'}
             </button>
           </div>
           <div className="store-search">
@@ -241,7 +252,7 @@ export function AdminPanel({ gifts, onChanged }: Props) {
             <input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} required />
           </label>
           <label>
-            Image URL
+            Image URL <span>auto-filled when available</span>
             <input value={form.imageUrl} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} placeholder="https://..." />
           </label>
           <label>
