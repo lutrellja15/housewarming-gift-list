@@ -41,6 +41,8 @@ function decodeHtml(value: string): string {
     .replaceAll('&amp;', '&')
     .replaceAll('&quot;', '"')
     .replaceAll('&#39;', "'")
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex: string) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, decimal: string) => String.fromCharCode(parseInt(decimal, 10)))
     .replaceAll('&lt;', '<')
     .replaceAll('&gt;', '>')
     .replace(/\s+/g, ' ')
@@ -81,6 +83,10 @@ function absoluteUrl(value: string, baseUrl: string): string {
   }
 }
 
+function stripTags(value: string): string {
+  return decodeHtml(value.replace(/<[^>]+>/g, ' '));
+}
+
 function parsePrice(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   if (typeof value !== 'string') return null;
@@ -94,6 +100,22 @@ function parsePrice(value: unknown): number | null {
 
   const price = Number(normalized[0]);
   return Number.isFinite(price) ? price : null;
+}
+
+function visibleProductPrice(html: string): number | null {
+  const heroPatterns = [
+    /data-seo-id=["']hero-price["'][^>]*>([\s\S]{0,800})<\/(?:div|span|section)>/i,
+    /data-testid=["'][^"']*(?:price|Price)[^"']*["'][^>]*>([\s\S]{0,800})<\/(?:div|span|section)>/i,
+    /class=["'][^"']*(?:price|Price)[^"']*["'][^>]*>([\s\S]{0,500})<\/(?:div|span|section)>/i
+  ];
+
+  for (const pattern of heroPatterns) {
+    const text = stripTags(textBetween(html, pattern));
+    const price = parsePrice(text);
+    if (price !== null && price > 0) return price;
+  }
+
+  return null;
 }
 
 function findOfferPrice(value: unknown): number | null {
@@ -137,6 +159,9 @@ function jsonLdPrice(html: string): number | null {
 }
 
 function productPrice(html: string): number | null {
+  const visiblePrice = visibleProductPrice(html);
+  if (visiblePrice !== null) return visiblePrice;
+
   const metadataPrice = parsePrice(
     metaContent(html, [
       'product:price:amount',
@@ -154,7 +179,22 @@ function productPrice(html: string): number | null {
   const itempropParsed = parsePrice(itempropPrice);
   if (itempropParsed !== null) return itempropParsed;
 
-  return jsonLdPrice(html);
+  const structuredPrice = jsonLdPrice(html);
+  if (structuredPrice !== null && structuredPrice > 0) return structuredPrice;
+
+  const statePatterns = [
+    /"currentPrice"\s*:\s*\{[^{}]{0,400}?"price"\s*:\s*([0-9]+(?:\.[0-9]{1,2})?)/i,
+    /"salePrice"\s*:\s*\{[^{}]{0,400}?"price"\s*:\s*([0-9]+(?:\.[0-9]{1,2})?)/i,
+    /"priceInfo"\s*:\s*\{[\s\S]{0,1200}?"price"\s*:\s*([0-9]+(?:\.[0-9]{1,2})?)/i,
+    /"priceString"\s*:\s*"\$([0-9][0-9,]*(?:\.[0-9]{1,2})?)"/i
+  ];
+
+  for (const pattern of statePatterns) {
+    const price = parsePrice(textBetween(html, pattern));
+    if (price !== null && price > 0) return price;
+  }
+
+  return null;
 }
 
 Deno.serve(async (request) => {
